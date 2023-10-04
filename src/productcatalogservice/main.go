@@ -236,6 +236,16 @@ func (p *productCatalog) ListProducts(ctx context.Context, req *pb.Empty) (*pb.L
 	span.SetAttributes(
 		attribute.Int("app.products.count", len(catalog)),
 	)
+
+	spanContext := trace.SpanFromContext(ctx).SpanContext()
+	if spanContext.HasSpanID() && spanContext.HasTraceID() {
+		log.WithFields(logrus.Fields{
+			"product_count": len(catalog),
+			"span_id":       span.SpanContext().SpanID(),
+			"trace_id":      trace.TraceID.String,
+		}).Infof("Listing products")
+	}
+
 	return &pb.ListProductsResponse{Products: catalog}, nil
 }
 
@@ -245,11 +255,30 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 		attribute.String("app.product.id", req.Id),
 	)
 
+	spanContext := span.SpanContext()
+	if spanContext.HasSpanID() && spanContext.HasTraceID() {
+		log.WithFields(logrus.Fields{
+			"product_id": req.Id,
+			"span_id":    span.SpanContext().SpanID(),
+			"trace_id":   trace.TraceID.String,
+		}).Infof("Getting product: %s", req.Id)
+	}
+
 	// GetProduct will fail on a specific product when feature flag is enabled
 	if p.checkProductFailure(ctx, req.Id) {
 		msg := fmt.Sprintf("Error: ProductCatalogService Fail Feature Flag Enabled")
 		span.SetStatus(otelcodes.Error, msg)
 		span.AddEvent(msg)
+
+		if spanContext.HasSpanID() && spanContext.HasTraceID() {
+			log.WithFields(logrus.Fields{
+				"product_id": req.Id,
+				"span_id":    span.SpanContext().SpanID(),
+				"trace_id":   trace.TraceID.String,
+				"error":      msg,
+			}).Infof("Error fetching product %s: %s", req.Id, msg)
+		}
+
 		return nil, status.Errorf(codes.Internal, msg)
 	}
 
@@ -265,6 +294,15 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 		msg := fmt.Sprintf("Product Not Found: %s", req.Id)
 		span.SetStatus(otelcodes.Error, msg)
 		span.AddEvent(msg)
+
+		if spanContext.HasSpanID() && spanContext.HasTraceID() {
+			log.WithFields(logrus.Fields{
+				"product_id": req.Id,
+				"span_id":    span.SpanContext().SpanID(),
+				"trace_id":   trace.TraceID.String,
+			}).Error(msg)
+		}
+
 		return nil, status.Errorf(codes.NotFound, msg)
 	}
 
@@ -273,11 +311,29 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 	span.SetAttributes(
 		attribute.String("app.product.name", found.Name),
 	)
+
+	if spanContext.HasSpanID() && spanContext.HasTraceID() {
+		log.WithFields(logrus.Fields{
+			"product_id": req.Id,
+			"span_id":    span.SpanContext().SpanID(),
+			"trace_id":   trace.TraceID.String,
+		}).Info(msg)
+	}
+
 	return found, nil
 }
 
 func (p *productCatalog) SearchProducts(ctx context.Context, req *pb.SearchProductsRequest) (*pb.SearchProductsResponse, error) {
 	span := trace.SpanFromContext(ctx)
+
+	spanContext := span.SpanContext()
+	if spanContext.HasSpanID() && spanContext.HasTraceID() {
+		log.WithFields(logrus.Fields{
+			"query":    req.Query,
+			"span_id":  span.SpanContext().SpanID(),
+			"trace_id": trace.TraceID.String,
+		}).Infof("Searching products with query: %s", req.Query)
+	}
 
 	var result []*pb.Product
 	for _, product := range catalog {
