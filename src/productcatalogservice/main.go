@@ -242,7 +242,7 @@ func (p *productCatalog) ListProducts(ctx context.Context, req *pb.Empty) (*pb.L
 		log.WithFields(logrus.Fields{
 			"product_count": len(catalog),
 			"span_id":       span.SpanContext().SpanID(),
-			"trace_id":      trace.TraceID.String,
+			"trace_id":      spanContext.TraceID().String(),
 		}).Infof("Listing products")
 	}
 
@@ -260,13 +260,13 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 		log.WithFields(logrus.Fields{
 			"product_id": req.Id,
 			"span_id":    span.SpanContext().SpanID(),
-			"trace_id":   trace.TraceID.String,
+			"trace_id":   spanContext.TraceID().String(),
 		}).Infof("Getting product: %s", req.Id)
 	}
 
 	// GetProduct will fail on a specific product when feature flag is enabled
 	if p.checkProductFailure(ctx, req.Id) {
-		msg := fmt.Sprintf("Error: ProductCatalogService Fail Feature Flag Enabled")
+		msg := "Error: ProductCatalogService Fail Feature Flag Enabled"
 		span.SetStatus(otelcodes.Error, msg)
 		span.AddEvent(msg)
 
@@ -274,7 +274,7 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 			log.WithFields(logrus.Fields{
 				"product_id": req.Id,
 				"span_id":    span.SpanContext().SpanID(),
-				"trace_id":   trace.TraceID.String,
+				"trace_id":   spanContext.TraceID().String(),
 				"error":      msg,
 			}).Infof("Error fetching product %s: %s", req.Id, msg)
 		}
@@ -299,7 +299,7 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 			log.WithFields(logrus.Fields{
 				"product_id": req.Id,
 				"span_id":    span.SpanContext().SpanID(),
-				"trace_id":   trace.TraceID.String,
+				"trace_id":   spanContext.TraceID().String(),
 			}).Error(msg)
 		}
 
@@ -316,7 +316,7 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 		log.WithFields(logrus.Fields{
 			"product_id": req.Id,
 			"span_id":    span.SpanContext().SpanID(),
-			"trace_id":   trace.TraceID.String,
+			"trace_id":   spanContext.TraceID().String(),
 		}).Info(msg)
 	}
 
@@ -331,7 +331,7 @@ func (p *productCatalog) SearchProducts(ctx context.Context, req *pb.SearchProdu
 		log.WithFields(logrus.Fields{
 			"query":    req.Query,
 			"span_id":  span.SpanContext().SpanID(),
-			"trace_id": trace.TraceID.String,
+			"trace_id": spanContext.TraceID().String(),
 		}).Infof("Searching products with query: %s", req.Query)
 	}
 
