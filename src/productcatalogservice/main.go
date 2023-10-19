@@ -266,7 +266,7 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 
 	// GetProduct will fail on a specific product when feature flag is enabled
 	if p.checkProductFailure(ctx, req.Id) {
-		msg := "Unable to retrieve product"
+		msg := "Unable to retrieve product, product lookup failure: resource exhausted"
 		span.SetStatus(otelcodes.Error, msg)
 		span.AddEvent(msg)
 
@@ -276,7 +276,7 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 				"span_id":    span.SpanContext().SpanID(),
 				"trace_id":   spanContext.TraceID().String(),
 				"error":      msg,
-			}).Infof("Error fetching product %s: %s", req.Id, msg)
+			}).Errorf("Error fetching product %s: %s", req.Id, msg)
 		}
 
 		return nil, status.Errorf(codes.Internal, msg)
@@ -332,7 +332,7 @@ func (p *productCatalog) SearchProducts(ctx context.Context, req *pb.SearchProdu
 			"query":    req.Query,
 			"span_id":  span.SpanContext().SpanID(),
 			"trace_id": spanContext.TraceID().String(),
-		}).Infof("Searching products with query: %s", req.Query)
+		}).Errorf("Searching products with query: %s", req.Query)
 	}
 
 	var result []*pb.Product
