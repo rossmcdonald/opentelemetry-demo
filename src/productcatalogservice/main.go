@@ -266,7 +266,7 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 
 	// GetProduct will fail on a specific product when feature flag is enabled
 	if p.checkProductFailure(ctx, req.Id) {
-		msg := "Error: ProductCatalogService Fail Feature Flag Enabled"
+		msg := "Unable to retrieve product"
 		span.SetStatus(otelcodes.Error, msg)
 		span.AddEvent(msg)
 
@@ -349,6 +349,12 @@ func (p *productCatalog) SearchProducts(ctx context.Context, req *pb.SearchProdu
 }
 
 func (p *productCatalog) checkProductFailure(ctx context.Context, id string) bool {
+	currentMinute := time.Now().Minute()
+	if currentMinute > 3 && currentMinute < 18 {
+		// Fail on all product requests for a certain period of time
+		return true
+	}
+
 	if id != "OLJCESPC7Z" || p.featureFlagSvcAddr == "" {
 		return false
 	}
