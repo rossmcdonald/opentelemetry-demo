@@ -350,7 +350,7 @@ func (p *productCatalog) SearchProducts(ctx context.Context, req *pb.SearchProdu
 
 func (p *productCatalog) checkProductFailure(ctx context.Context, id string) bool {
 	currentMinute := time.Now().Minute()
-	if currentMinute > 3 && currentMinute < 18 {
+	if (currentMinute > 2 && currentMinute < 12) || (currentMinute > 32 && currentMinute < 42) {
 		// Fail on all product requests for a certain period of time
 		return true
 	}
